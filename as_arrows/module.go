@@ -33,8 +33,6 @@ type Config struct {
 }
 
 // Validate ensures all parts of the config are valid and important fields exist.
-// The path is the JSON path in your robot's config (not the `Config` struct) to the
-// resource being validated; e.g. "components.0".
 func (cfg *Config) Validate(path string) ([]string, []string, error) {
 	if cfg.MotionService == "" {
 		return nil, nil, fmt.Errorf("motion_service is required")
@@ -52,18 +50,17 @@ type drawMotionPlanAsArrows struct {
 
 	name   resource.Name
 	logger logging.Logger
-	cfg    *Config
+	config *Config
 
 	cancelCtx  context.Context
 	cancelFunc func()
 
 	motionService motion.Service
 
-	transforms   map[string]*storedTransform
-	transformsMu sync.RWMutex
+	transforms      map[string]*storedTransform
+	transformsMutex sync.RWMutex
 
-	changeStreams   []*transformChangeStream
-	changeStreamsMu sync.Mutex
+	changeStream chan worldstatestore.TransformChange
 
 	workers sync.WaitGroup
 }
@@ -71,12 +68,6 @@ type drawMotionPlanAsArrows struct {
 type storedTransform struct {
 	UUID      []byte
 	Transform *commonPB.Transform
-}
-
-type transformChangeStream struct {
-	changes chan worldstatestore.TransformChange
-	ctx     context.Context
-	cancel  func()
 }
 
 func newDrawMotionPlanAsArrows(
@@ -91,7 +82,6 @@ func newDrawMotionPlanAsArrows(
 	}
 
 	return NewAsArrows(ctx, deps, rawConf.ResourceName(), conf, logger)
-
 }
 
 func NewAsArrows(
@@ -107,81 +97,81 @@ func NewAsArrows(
 	}
 
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
-	s := &drawMotionPlanAsArrows{
+	service := &drawMotionPlanAsArrows{
 		name:          name,
 		logger:        logger,
-		cfg:           conf,
+		config:        conf,
 		cancelCtx:     cancelCtx,
 		cancelFunc:    cancelFunc,
 		motionService: motionService,
 		transforms:    make(map[string]*storedTransform),
-		changeStreams: make([]*transformChangeStream, 0),
+		changeStream:  make(chan worldstatestore.TransformChange, 100), // Simple buffered channel
 	}
 
 	if conf.UpdateRateHz != nil {
-		s.startBackgroundWorker()
+		service.startBackgroundWorker()
 	}
 
-	return s, nil
+	return service, nil
 }
 
-func (s *drawMotionPlanAsArrows) Name() resource.Name {
-	return s.name
+func (service *drawMotionPlanAsArrows) Name() resource.Name {
+	return service.name
 }
 
-func (s *drawMotionPlanAsArrows) ListUUIDs(ctx context.Context, extra map[string]interface{}) ([][]byte, error) {
-	s.transformsMu.RLock()
-	defer s.transformsMu.RUnlock()
+func (service *drawMotionPlanAsArrows) ListUUIDs(ctx context.Context, extra map[string]interface{}) ([][]byte, error) {
+	service.transformsMutex.RLock()
+	defer service.transformsMutex.RUnlock()
 
-	uuids := make([][]byte, 0, len(s.transforms))
-	for _, t := range s.transforms {
-		uuids = append(uuids, t.UUID)
+	uuids := make([][]byte, 0, len(service.transforms))
+	for _, transform := range service.transforms {
+		uuids = append(uuids, transform.UUID)
 	}
 
 	return uuids, nil
 }
 
-func (s *drawMotionPlanAsArrows) GetTransform(ctx context.Context, uuid []byte, extra map[string]interface{}) (*commonPB.Transform, error) {
-	s.transformsMu.RLock()
-	defer s.transformsMu.RUnlock()
+func (service *drawMotionPlanAsArrows) GetTransform(ctx context.Context, uuid []byte, extra map[string]interface{}) (*commonPB.Transform, error) {
+	service.transformsMutex.RLock()
+	defer service.transformsMutex.RUnlock()
 
-	uuidStr := string(uuid)
-	t, ok := s.transforms[uuidStr]
+	uuidString := string(uuid)
+	transform, ok := service.transforms[uuidString]
 	if !ok {
 		return nil, fmt.Errorf("transform not found for UUID: %x", uuid)
 	}
 
-	return t.Transform, nil
+	return transform.Transform, nil
 }
 
-func (s *drawMotionPlanAsArrows) StreamTransformChanges(ctx context.Context, extra map[string]interface{}) (*worldstatestore.TransformChangeStream, error) {
-	s.changeStreamsMu.Lock()
-	defer s.changeStreamsMu.Unlock()
-
-	streamCtx, cancel := context.WithCancel(ctx)
-	stream := &transformChangeStream{
-		changes: make(chan worldstatestore.TransformChange, 100),
-		ctx:     streamCtx,
-		cancel:  cancel,
-	}
-
-	s.changeStreams = append(s.changeStreams, stream)
-	changeStream := worldstatestore.NewTransformChangeStreamFromChannel(streamCtx, stream.changes)
+func (service *drawMotionPlanAsArrows) StreamTransformChanges(ctx context.Context, extra map[string]interface{}) (*worldstatestore.TransformChangeStream, error) {
+	subscriberChan := make(chan worldstatestore.TransformChange, 10)
 
 	go func() {
-		<-streamCtx.Done()
-		s.removeChangeStream(stream)
+		defer close(subscriberChan)
+		for {
+			select {
+			case change := <-service.changeStream:
+				select {
+				case subscriberChan <- change:
+				case <-ctx.Done():
+					return
+				}
+			case <-ctx.Done():
+				return
+			}
+		}
 	}()
 
-	return changeStream, nil
+	return worldstatestore.NewTransformChangeStreamFromChannel(ctx, subscriberChan), nil
 }
 
-func (s *drawMotionPlanAsArrows) DoCommand(ctx context.Context, cmd map[string]interface{}) (map[string]interface{}, error) {
-	if addCmd, ok := cmd["draw_motion_plan"]; ok {
+func (service *drawMotionPlanAsArrows) DoCommand(ctx context.Context, cmd map[string]interface{}) (map[string]interface{}, error) {
+	if drawCommand, ok := cmd["draw_motion_plan"]; ok {
 		var componentName string
 		var executionID string
 
-		if params, ok := addCmd.(map[string]interface{}); ok {
+		if params, ok := drawCommand.(map[string]interface{}); ok {
 			if cn, ok := params["component_name"].(string); ok {
 				componentName = cn
 			}
@@ -190,7 +180,7 @@ func (s *drawMotionPlanAsArrows) DoCommand(ctx context.Context, cmd map[string]i
 			}
 		}
 
-		count, err := s.drawMotionPlan(ctx, componentName, executionID)
+		count, err := service.drawMotionPlan(ctx, componentName, executionID)
 		if err != nil {
 			return map[string]interface{}{
 				"success": false,
@@ -205,7 +195,7 @@ func (s *drawMotionPlanAsArrows) DoCommand(ctx context.Context, cmd map[string]i
 	}
 
 	if _, ok := cmd["clear_arrows"]; ok {
-		count, err := s.clearAllArrows(ctx)
+		count, err := service.clearAllArrows(ctx)
 		if err != nil {
 			return map[string]interface{}{
 				"success": false,
@@ -222,51 +212,36 @@ func (s *drawMotionPlanAsArrows) DoCommand(ctx context.Context, cmd map[string]i
 	return nil, fmt.Errorf("unknown command")
 }
 
-func (s *drawMotionPlanAsArrows) Close(context.Context) error {
-	s.cancelFunc()
-	s.workers.Wait()
-
-	s.changeStreamsMu.Lock()
-	for _, stream := range s.changeStreams {
-		stream.cancel()
-		close(stream.changes)
-	}
-	s.changeStreams = nil
-	s.changeStreamsMu.Unlock()
-
-	s.transformsMu.Lock()
-	s.transforms = nil
-	s.transformsMu.Unlock()
-
+func (service *drawMotionPlanAsArrows) Close(context.Context) error {
+	service.cancelFunc()
+	service.workers.Wait()
+	close(service.changeStream)
 	return nil
 }
 
-func (s *drawMotionPlanAsArrows) startBackgroundWorker() {
-	s.workers.Add(1)
+func (service *drawMotionPlanAsArrows) startBackgroundWorker() {
+	service.workers.Add(1)
 	go func() {
-		defer s.workers.Done()
+		defer service.workers.Done()
 
-		interval := time.Duration(float64(time.Second) / *s.cfg.UpdateRateHz)
+		interval := time.Duration(float64(time.Second) / *service.config.UpdateRateHz)
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
-
-		s.logger.Infow("background worker started", "rate_hz", *s.cfg.UpdateRateHz, "interval", interval)
 
 		for {
 			select {
 			case <-ticker.C:
-				if err := s.updateMotionPlanArrows(s.cancelCtx); err != nil {
-					s.logger.Errorw("failed to update motion plan", "error", err)
+				if err := service.updateMotionPlanArrows(service.cancelCtx); err != nil {
+					service.logger.Errorw("failed to update motion plan", "error", err)
 				}
-			case <-s.cancelCtx.Done():
-				s.logger.Info("background worker stopped")
+			case <-service.cancelCtx.Done():
 				return
 			}
 		}
 	}()
 }
 
-func (s *drawMotionPlanAsArrows) updateMotionPlanArrows(ctx context.Context) error {
+func (service *drawMotionPlanAsArrows) updateMotionPlanArrows(ctx context.Context) error {
 
 	// get the most recent motion plan
 	// get the frame poses from the motion plan
@@ -277,46 +252,18 @@ func (s *drawMotionPlanAsArrows) updateMotionPlanArrows(ctx context.Context) err
 	return nil
 }
 
-func (s *drawMotionPlanAsArrows) removeChangeStream(stream *transformChangeStream) {
-	s.changeStreamsMu.Lock()
-	defer s.changeStreamsMu.Unlock()
-
-	for i, st := range s.changeStreams {
-		if st == stream {
-			s.changeStreams = append(s.changeStreams[:i], s.changeStreams[i+1:]...)
-			break
-		}
+func (service *drawMotionPlanAsArrows) emitChange(change worldstatestore.TransformChange) {
+	select {
+	case service.changeStream <- change:
+		// Successfully sent
+	default:
+		service.logger.Warnw("change stream buffer full, dropping change")
 	}
 }
 
-func (s *drawMotionPlanAsArrows) emitChange(change worldstatestore.TransformChange) {
-	s.changeStreamsMu.Lock()
-	defer s.changeStreamsMu.Unlock()
-
-	for _, stream := range s.changeStreams {
-		select {
-		case stream.changes <- change:
-			// Successfully sent
-		case <-stream.ctx.Done():
-			// Stream is closed, skip
-		default:
-			// Buffer full, skip (non-blocking)
-			s.logger.Warnw("change stream buffer full, dropping change")
-		}
-	}
-}
-
-func createArrowFromPose(pose spatialmath.Pose) *commonPB.Geometry {
-	// create an arrow transform from the pose
-	// should use the same arrow drawing as motion-tools
-
-	return nil
-}
-
-func (s *drawMotionPlanAsArrows) drawMotionPlan(ctx context.Context, componentName, executionID string) (int, error) {
-	s.logger.Infow("adding motion plan arrows", "component_name", componentName, "execution_id", executionID)
-
+func (service *drawMotionPlanAsArrows) drawMotionPlan(ctx context.Context, componentName, executionID string) (int, error) {
 	count := 0
+
 	// get motion plan by execution ID, or most recent plan if no execution ID is provided
 	// get the frame poses from the motion plan
 	// create an arrow for each pose
@@ -327,13 +274,13 @@ func (s *drawMotionPlanAsArrows) drawMotionPlan(ctx context.Context, componentNa
 	return count, nil
 }
 
-func (s *drawMotionPlanAsArrows) clearAllArrows(ctx context.Context) (int, error) {
-	s.transformsMu.Lock()
-	defer s.transformsMu.Unlock()
+func (service *drawMotionPlanAsArrows) clearAllArrows(ctx context.Context) (int, error) {
+	service.transformsMutex.Lock()
+	defer service.transformsMutex.Unlock()
 
-	count := len(s.transforms)
-	for uuid := range s.transforms {
-		s.emitChange(worldstatestore.TransformChange{
+	count := len(service.transforms)
+	for uuid := range service.transforms {
+		service.emitChange(worldstatestore.TransformChange{
 			ChangeType: v1.TransformChangeType_TRANSFORM_CHANGE_TYPE_REMOVED,
 			Transform: &commonPB.Transform{
 				Uuid: []byte(uuid),
@@ -341,9 +288,15 @@ func (s *drawMotionPlanAsArrows) clearAllArrows(ctx context.Context) (int, error
 		})
 	}
 
-	s.transforms = make(map[string]*storedTransform)
-	s.logger.Infow("cleared arrows", "count", count)
+	service.transforms = make(map[string]*storedTransform)
 	return count, nil
+}
+
+func createArrowFromPose(pose spatialmath.Pose) *commonPB.Geometry {
+	// create an arrow transform from the pose
+	// should use the same arrow drawing as motion-tools
+
+	return nil
 }
 
 func generateUUID(componentName, executionID string, index int) []byte {
