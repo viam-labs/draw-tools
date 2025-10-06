@@ -2,7 +2,8 @@ package main
 
 import (
 	"context"
-	"drawmotionplan"
+	"drawmotionplan/as_arrows"
+
 	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/resource"
 	worldstatestore "go.viam.com/rdk/services/worldstatestore"
@@ -20,11 +21,8 @@ func realMain() error {
 	logger := logging.NewLogger("cli")
 
 	deps := resource.Dependencies{}
-	// can load these from a remote machine if you need
-
-	cfg := drawmotionplan.Config{}
-
-	thing, err := drawmotionplan.NewAsArrows(ctx, deps, worldstatestore.Named("foo"), &cfg, logger)
+	cfg := as_arrows.Config{}
+	thing, err := as_arrows.NewAsArrows(ctx, deps, worldstatestore.Named("foo"), &cfg, logger)
 	if err != nil {
 		return err
 	}
