@@ -2,21 +2,24 @@ package as_arrows
 
 import (
 	"context"
+	"drawmotionplan/colors"
 	"fmt"
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	commonPB "go.viam.com/api/common/v1"
 	v1 "go.viam.com/api/service/worldstatestore/v1"
 	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/services/motion"
 	worldstatestore "go.viam.com/rdk/services/worldstatestore"
-	"go.viam.com/rdk/spatialmath"
 )
 
 var (
 	AsArrows = resource.NewModel("viam-viz", "draw-motion-plan", "as-arrows")
+
+	MinUpdateRateHz = 16.6667
 )
 
 func init() {
@@ -28,8 +31,10 @@ func init() {
 }
 
 type Config struct {
-	MotionService string   `json:"motion_service"`           // Required: name of motion service to use
-	UpdateRateHz  *float64 `json:"update_rate_hz,omitempty"` // Optional: rate to fetch motion plan (Hz)
+	MotionService string        `json:"motion_service"`           // Required: name of motion service to use
+	UpdateRateHz  *float64      `json:"update_rate_hz,omitempty"` // Optional: rate to fetch motion plan (Hz)
+	Color         *colors.Color `json:"color,omitempty"`          // Optional: color of the arrows (default is black)
+	ParentFrame   string        `json:"parent_frame,omitempty"`   // Optional: parent frame of the arrows (default is world)
 }
 
 // Validate ensures all parts of the config are valid and important fields exist.
@@ -38,8 +43,8 @@ func (cfg *Config) Validate(path string) ([]string, []string, error) {
 		return nil, nil, fmt.Errorf("motion_service is required")
 	}
 
-	if cfg.UpdateRateHz != nil && *cfg.UpdateRateHz <= 0 {
-		return nil, nil, fmt.Errorf("update_rate_hz must be greater than 0")
+	if cfg.UpdateRateHz != nil && *cfg.UpdateRateHz <= MinUpdateRateHz {
+		return nil, nil, fmt.Errorf("update_rate_hz must be greater than or equal to %f", MinUpdateRateHz)
 	}
 
 	return []string{cfg.MotionService}, nil, nil
@@ -56,6 +61,8 @@ type drawMotionPlanAsArrows struct {
 	cancelFunc func()
 
 	motionService motion.Service
+	color         colors.Color
+	parentFrame   string
 
 	transforms      map[string]*storedTransform
 	transformsMutex sync.RWMutex
@@ -66,7 +73,7 @@ type drawMotionPlanAsArrows struct {
 }
 
 type storedTransform struct {
-	UUID      []byte
+	UUID      uuid.UUID
 	Transform *commonPB.Transform
 }
 
@@ -96,6 +103,20 @@ func NewAsArrows(
 		return nil, fmt.Errorf("failed to get motion service %q: %w", conf.MotionService, err)
 	}
 
+	color := conf.Color
+	if color == nil {
+		color = &colors.Color{
+			R: 0,
+			G: 0,
+			B: 0,
+		}
+	}
+
+	parentFrame := conf.ParentFrame
+	if parentFrame == "" {
+		parentFrame = "world"
+	}
+
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	service := &drawMotionPlanAsArrows{
 		name:          name,
@@ -104,6 +125,8 @@ func NewAsArrows(
 		cancelCtx:     cancelCtx,
 		cancelFunc:    cancelFunc,
 		motionService: motionService,
+		color:         *color,
+		parentFrame:   parentFrame,
 		transforms:    make(map[string]*storedTransform),
 		changeStream:  make(chan worldstatestore.TransformChange, 100), // Simple buffered channel
 	}
@@ -125,7 +148,7 @@ func (service *drawMotionPlanAsArrows) ListUUIDs(ctx context.Context, extra map[
 
 	uuids := make([][]byte, 0, len(service.transforms))
 	for _, transform := range service.transforms {
-		uuids = append(uuids, transform.UUID)
+		uuids = append(uuids, transform.UUID[:])
 	}
 
 	return uuids, nil
@@ -266,7 +289,7 @@ func (service *drawMotionPlanAsArrows) drawMotionPlan(ctx context.Context, compo
 
 	// get motion plan by execution ID, or most recent plan if no execution ID is provided
 	// get the frame poses from the motion plan
-	// create an arrow for each pose
+	// create an arrow for each pose using drawArrowsFromPoses
 	// add the arrow to the world state
 	// emit a change stream event for each arrow
 	// return the number of arrows added
@@ -292,15 +315,7 @@ func (service *drawMotionPlanAsArrows) clearAllArrows(ctx context.Context) (int,
 	return count, nil
 }
 
-func createArrowFromPose(pose spatialmath.Pose) *commonPB.Geometry {
-	// create an arrow transform from the pose
-	// should use the same arrow drawing as motion-tools
-
-	return nil
-}
-
-func generateUUID(componentName, executionID string, index int) []byte {
-	data := fmt.Sprintf("%s-%s-%d-%d", componentName, executionID, index, time.Now().UnixNano())
-	hash := fmt.Sprintf("%x", data)
-	return []byte(hash)
+func generateUUID() []byte {
+	id := uuid.New()
+	return id[:]
 }
