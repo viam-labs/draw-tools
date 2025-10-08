@@ -33,7 +33,7 @@ Adds arrows representing poses to the world state. Each arrow can have a custom 
 Each arrow object in the array should contain:
 
 - `pose` (required): Object containing position and orientation
-- `color` (optional): Object containing RGB color values (defaults to black)
+- `color` (optional): Object containing RGB color values
 - `parent_frame` (optional): Reference frame name (defaults to "world")
 
 **Examples:**

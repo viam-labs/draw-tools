@@ -34,7 +34,7 @@ type Config struct {
 
 type arrow struct {
 	Pose        spatialmath.Pose `json:"pose"`
-	Color       lib.Color        `json:"color,omitempty"`        // optional, defaults to { R: 0, G: 0, B: 0 }
+	Color       lib.Color        `json:"color,omitempty"`        // optional, defaults to { R: 255, G: 255, B: 0 }
 	ParentFrame string           `json:"parent_frame,omitempty"` // optional, defaults to "world"
 }
 

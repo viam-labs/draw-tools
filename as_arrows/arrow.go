@@ -9,6 +9,8 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
+var defaultColor = lib.Color{R: 255, G: 255, B: 0}
+
 func (service *drawMotionPlanAsArrows) drawArrows(arrows []arrow) ([]commonPB.Transform, error) {
 	data := []commonPB.Transform{}
 	index := 0
@@ -80,16 +82,6 @@ func (service *drawMotionPlanAsArrows) parseArrow(item any) (arrow, error) {
 		return arrow{}, fmt.Errorf("failed to parse pose: %w", err)
 	}
 
-	color := lib.Color{R: 0, G: 0, B: 0}
-	if colorData, ok := arrowMap["color"]; ok {
-		parsed, err := lib.ParseColor(colorData)
-		if err != nil {
-			return arrow{}, fmt.Errorf("failed to parse color: %w", err)
-		}
-
-		color = parsed
-	}
-
 	parentFrame := "world"
 	if frameData, ok := arrowMap["parent_frame"]; ok {
 		if frameStr, ok := frameData.(string); ok {
@@ -97,9 +89,21 @@ func (service *drawMotionPlanAsArrows) parseArrow(item any) (arrow, error) {
 		}
 	}
 
-	return arrow{
+	result := arrow{
 		Pose:        pose,
-		Color:       color,
 		ParentFrame: parentFrame,
-	}, nil
+	}
+
+	if colorData, ok := arrowMap["color"]; ok {
+		parsed, err := lib.ParseColor(colorData, defaultColor)
+		if err != nil {
+			return arrow{}, fmt.Errorf("failed to parse color: %w", err)
+		}
+
+		result.Color = parsed
+	} else {
+		result.Color = defaultColor
+	}
+
+	return result, nil
 }

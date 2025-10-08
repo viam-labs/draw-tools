@@ -8,15 +8,19 @@ type Color struct {
 	B uint8
 }
 
-func ParseColor(colorData any) (Color, error) {
+func ParseColor(colorData any, defaultValue Color) (Color, error) {
 	colorMap, ok := colorData.(map[string]any)
 	if !ok {
-		return Color{}, fmt.Errorf("expected color object, got %T", colorData)
+		return defaultValue, fmt.Errorf("expected color object, got %T", colorData)
 	}
 
-	r := GetFloat64(colorMap["r"], 0.0)
-	g := GetFloat64(colorMap["g"], 0.0)
-	b := GetFloat64(colorMap["b"], 0.0)
+	if colorMap == nil {
+		return defaultValue, nil
+	}
+
+	r := ParseFloat64(colorMap["r"], float64(defaultValue.R))
+	g := ParseFloat64(colorMap["g"], float64(defaultValue.G))
+	b := ParseFloat64(colorMap["b"], float64(defaultValue.B))
 
 	return Color{
 		R: uint8(r),
