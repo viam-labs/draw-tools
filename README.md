@@ -1,91 +1,107 @@
 # Module draw-motion-plan
 
-A Viam module that visualizes motion plan poses as arrows in the World State Store service.
+A Viam module that visualizes poses as arrows in the World State Store service.
 
 ## Model viam-viz:draw-motion-plan:as-arrows
 
-This module integrates with Viam's World State Store service to visualize motion plan poses as arrows. It supports both manual and automatic modes for updating the visualization.
+This module integrates with Viam's World State Store service to visualize poses as arrows. It provides a simple interface for drawing custom arrows with specified poses, colors, and reference frames.
 
 ### Configuration
 
 The following attribute template can be used to configure this model:
 
 ```json
-{
-  "motion_service": "builtin",
-  "update_rate_hz": 10
-}
+{}
 ```
 
 #### Attributes
 
-The following attributes are available for this model:
-
-| Name             | Type   | Inclusion | Description                                   |
-| ---------------- | ------ | --------- | --------------------------------------------- |
-| `motion_service` | string | Required  | The name of the motion service to use         |
-| `update_rate_hz` | float  | Optional  | Rate (Hz) to automatically fetch motion plans |
-
-#### Example Configuration
-
-**Manual Mode (No Automatic Updates):**
-
-```json
-{
-  "motion_service": "builtin"
-}
-```
-
-**Automatic Mode (Updates at 10 Hz):**
-
-```json
-{
-  "motion_service": "builtin",
-  "update_rate_hz": 10.0
-}
-```
+This model currently has no required configuration attributes. The configuration is empty, making it simple to set up.
 
 ### DoCommand
 
 The module supports the following commands:
 
-#### Draw Motion Plan
+#### Draw
 
-Fetches a motion plan and adds arrows representing each pose to the world state. If no `execution_id` is provided, it automatically uses the most recent motion plan.
+Adds arrows representing poses to the world state. Each arrow can have a custom pose, color, and parent frame.
 
 **Parameters:**
 
-- `component_name` (optional): Name of the component to get motion plan for. If not provided, uses the most recent plan for any component.
-- `execution_id` (optional): Specific execution ID to use. If not provided, automatically uses the most recent execution.
+- `draw` (required): Array of arrow objects to draw
+
+Each arrow object in the array should contain:
+
+- `pose` (required): Object containing position and orientation
+- `color` (optional): Object containing RGB color values (defaults to black)
+- `parent_frame` (optional): Reference frame name (defaults to "world")
 
 **Examples:**
 
-Get the most recent motion plan for any component:
+Draw a single red arrow at the origin:
 
 ```json
 {
-  "draw_motion_plan": {}
+  "draw": [
+    {
+      "pose": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "o_x": 0.0,
+        "o_y": 0.0,
+        "o_z": 1.0,
+        "theta": 0.0
+      },
+      "color": {
+        "r": 255,
+        "g": 0,
+        "b": 0
+      }
+    }
+  ]
 }
 ```
 
-Get the most recent motion plan for a specific component:
+Draw multiple arrows with different colors and positions:
 
 ```json
 {
-  "draw_motion_plan": {
-    "component_name": "my-arm"
-  }
-}
-```
-
-Get a specific execution's motion plan:
-
-```json
-{
-  "draw_motion_plan": {
-    "component_name": "my-arm",
-    "execution_id": "123e4567-e89b-12d3-a456-426614174000"
-  }
+  "draw": [
+    {
+      "pose": {
+        "x": 1.0,
+        "y": 0.0,
+        "z": 0.0,
+        "o_x": 0.0,
+        "o_y": 0.0,
+        "o_z": 1.0,
+        "theta": 0.0
+      },
+      "color": {
+        "r": 255,
+        "g": 0,
+        "b": 0
+      },
+      "parent_frame": "base_link"
+    },
+    {
+      "pose": {
+        "x": 0.0,
+        "y": 1.0,
+        "z": 0.0,
+        "o_x": 0.0,
+        "o_y": 0.0,
+        "o_z": 1.0,
+        "theta": 90.0
+      },
+      "color": {
+        "r": 0,
+        "g": 255,
+        "b": 0
+      }
+    }
+  ]
 }
 ```
 
@@ -94,7 +110,7 @@ Get a specific execution's motion plan:
 ```json
 {
   "success": true,
-  "arrows_added": 15
+  "arrows_added": 2
 }
 ```
 
@@ -104,7 +120,7 @@ Removes all arrows from the world state.
 
 ```json
 {
-  "clear_arrows": {}
+  "clear": {}
 }
 ```
 
@@ -113,6 +129,6 @@ Removes all arrows from the world state.
 ```json
 {
   "success": true,
-  "arrows_removed": 15
+  "arrows_removed": 2
 }
 ```
