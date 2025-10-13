@@ -1,6 +1,0 @@
-{
-  "type": "patch",
-  "message": "Add token to auto-tag workflow to trigger deploys",
-  "by": "Devin C.",
-  "at": "2025-10-13 18:01:50 EDT"
-}
