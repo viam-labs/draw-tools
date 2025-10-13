@@ -3,6 +3,7 @@ package lib
 import (
 	"fmt"
 
+	"github.com/google/uuid"
 	commonPB "go.viam.com/api/common/v1"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -11,12 +12,12 @@ var defaultColor = Color{R: 255, G: 255, B: 0}
 
 type Arrow struct {
 	Pose        Pose   `json:"pose"`                   // required
-	UUID        []byte `json:"uuid,omitempty"`         // optional, creates a new transform if not provided
+	UUID        string `json:"uuid,omitempty"`         // optional, creates a new transform if not provided
 	Color       Color  `json:"color,omitempty"`        // optional, defaults to black
 	ParentFrame string `json:"parent_frame,omitempty"` // optional, defaults to "world"
 }
 
-func DrawArrows(arrows []Arrow) ([]commonPB.Transform, error) {
+func CreateArrowTransforms(arrows []Arrow) ([]commonPB.Transform, error) {
 	data := []commonPB.Transform{}
 	for _, arrow := range arrows {
 		metadata, err := structpb.NewStruct(map[string]any{
@@ -32,9 +33,15 @@ func DrawArrows(arrows []Arrow) ([]commonPB.Transform, error) {
 			return nil, err
 		}
 
-		id := arrow.UUID
-		if id == nil {
+		var id []byte
+		if arrow.UUID == "" {
 			id = GenerateUUID()
+		} else {
+			parsedId, err := uuid.Parse(arrow.UUID)
+			if err != nil {
+				return nil, err
+			}
+			id = parsedId[:]
 		}
 
 		data = append(data,
