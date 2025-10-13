@@ -18,14 +18,15 @@ When you're ready to release a new version:
 make bump-version
 ```
 
-## Changelogs Directory
+## Changelogs
 
 The `.changelogs` directory contains changelog files that track changes for the next version release.
 
 ### How It Works
 
 1. **Creating a Changelog**: When you make changes, run `make change` to create a new changelog file
-2. **Compiling Changelogs**: When `make bump-version` is run, all files here are compiled into `CHANGELOG.md` and then deleted
+2. **Compiling Changelogs**: When `make bump-version` is run, all files are compiled into `CHANGELOG.md` and then deleted
+3. **Auto-tagging**: The tag is only created if `.version` matches the `Current Version:` in `CHANGELOG.md`
 
 ### Changelog File Structure
 

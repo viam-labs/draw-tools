@@ -32,6 +32,47 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Version from .version file: $VERSION"
 
+      - name: Verify version matches CHANGELOG.md
+        id: verify_changelog
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+
+          # Check if CHANGELOG.md exists
+          if [ ! -f "CHANGELOG.md" ]; then
+            echo "❌ ERROR: CHANGELOG.md does not exist"
+            echo ""
+            echo "The CHANGELOG.md file is missing. Something horrible has happened."
+            exit 1
+          fi
+
+          # Extract current version from CHANGELOG.md
+          CHANGELOG_VERSION=$(grep "^Current Version:" CHANGELOG.md | sed 's/Current Version: //' | tr -d ' ')
+
+          if [ -z "$CHANGELOG_VERSION" ]; then
+            echo "❌ ERROR: Could not find 'Current Version:' in CHANGELOG.md"
+            echo ""
+            echo "CHANGELOG.md must have a line like 'Current Version: X.Y.Z' at the top."
+            exit 1
+          fi
+
+          echo "Version in .version: $VERSION"
+          echo "Version in CHANGELOG.md: $CHANGELOG_VERSION"
+
+          if [ "$VERSION" != "$CHANGELOG_VERSION" ]; then
+            echo ""
+            echo "❌ ERROR: Version mismatch detected!"
+            echo ""
+            echo "  .version file:    $VERSION"
+            echo "  CHANGELOG.md:     $CHANGELOG_VERSION"
+            echo ""
+            echo "Both files must have the same version for auto-tagging to work."
+            echo ""
+            echo "To fix this, run 'make bump-version' which updates both files."
+            exit 1
+          fi
+
+          echo "✓ Versions match in both .version and CHANGELOG.md"
+
       - name: Check if tag already exists
         id: check_tag
         run: |
@@ -44,8 +85,76 @@ jobs:
             echo "Tag $VERSION does not exist yet"
           fi
 
-      - name: Create and push tag
+      - name: Verify version is newer than latest tag
+        id: check_version
         if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          NEW_VERSION="${{ steps.get_version.outputs.version }}"
+
+          # Get all tags that match semantic versioning pattern
+          LATEST_TAG=$(git tag -l | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
+
+          if [ -z "$LATEST_TAG" ]; then
+            echo "No previous tags found, allowing version $NEW_VERSION"
+            echo "is_newer=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "Latest existing tag: $LATEST_TAG"
+          echo "New version: $NEW_VERSION"
+
+          # Function to compare semantic versions
+          compare_versions() {
+            local ver1=$1
+            local ver2=$2
+            
+            # Split versions into components
+            IFS='.' read -r major1 minor1 patch1 <<< "$ver1"
+            IFS='.' read -r major2 minor2 patch2 <<< "$ver2"
+            
+            # Compare major version
+            if [ "$major1" -gt "$major2" ]; then
+              return 0  # ver1 > ver2
+            elif [ "$major1" -lt "$major2" ]; then
+              return 1  # ver1 < ver2
+            fi
+            
+            # Compare minor version
+            if [ "$minor1" -gt "$minor2" ]; then
+              return 0
+            elif [ "$minor1" -lt "$minor2" ]; then
+              return 1
+            fi
+            
+            # Compare patch version
+            if [ "$patch1" -gt "$patch2" ]; then
+              return 0
+            elif [ "$patch1" -lt "$patch2" ]; then
+              return 1
+            fi
+            
+            # Versions are equal
+            return 2
+          }
+
+          if compare_versions "$NEW_VERSION" "$LATEST_TAG"; then
+            echo "✓ Version $NEW_VERSION is newer than $LATEST_TAG"
+            echo "is_newer=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_newer=false" >> $GITHUB_OUTPUT
+            echo "❌ ERROR: Version $NEW_VERSION is not newer than the latest tag $LATEST_TAG"
+            echo ""
+            echo "The version in .version file has been decreased or is the same."
+            echo "This usually happens due to a revert or merge conflict."
+            echo ""
+            echo "If you need to deploy an older version, you must:"
+            echo "  1. Manually create and push the tag"
+            echo "  2. Or increment the version to be higher than $LATEST_TAG"
+            exit 1
+          fi
+
+      - name: Create and push tag
+        if: steps.check_tag.outputs.exists == 'false' && steps.check_version.outputs.is_newer == 'true'
         run: |
           VERSION="${{ steps.get_version.outputs.version }}"
 

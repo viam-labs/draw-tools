@@ -148,8 +148,14 @@ echo "Updating CHANGELOG.md..."
 
 # Create CHANGELOG.md if it doesn't exist
 if [ ! -f "CHANGELOG.md" ]; then
-    echo "# Changelog" > CHANGELOG.md
-    echo "" >> CHANGELOG.md
+    cat > CHANGELOG.md << EOF
+# Changelog
+
+Current Version: $NEXT_VERSION
+
+---
+
+EOF
 fi
 
 # Prepare the new changelog entry
@@ -185,18 +191,19 @@ for change_type in major minor patch; do
     fi
 done
 
-# Insert the new entry after the first line (header)
-if [ -f "CHANGELOG.md" ]; then
-    # Create temporary file with new entry
-    {
-        head -n 1 CHANGELOG.md
-        echo -e "$CHANGELOG_ENTRY"
-        tail -n +2 CHANGELOG.md
-    } > CHANGELOG.md.tmp
-    mv CHANGELOG.md.tmp CHANGELOG.md
-else
-    echo -e "# Changelog\n$CHANGELOG_ENTRY" > CHANGELOG.md
-fi
+# Update existing changelog
+# First, update the Current Version line
+sed -i.bak "s/^Current Version: .*/Current Version: $NEXT_VERSION/" CHANGELOG.md && rm -f CHANGELOG.md.bak
+
+# Then insert new entry after the "---" line
+awk -v entry="$CHANGELOG_ENTRY" '
+    /^---$/ {
+        print
+        printf "%s", entry
+        next
+    }
+    { print }
+' CHANGELOG.md > CHANGELOG.md.tmp && mv CHANGELOG.md.tmp CHANGELOG.md
 
 echo -e "${GREEN}✓ CHANGELOG.md updated${NC}"
 
