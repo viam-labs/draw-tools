@@ -3,9 +3,9 @@ package lib
 import "fmt"
 
 type Color struct {
-	R uint8
-	G uint8
-	B uint8
+	R uint8 `json:"r"`
+	G uint8 `json:"g"`
+	B uint8 `json:"b"`
 }
 
 func ParseColor(colorData any, defaultValue Color) (Color, error) {

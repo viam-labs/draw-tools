@@ -1,30 +1,37 @@
 {
   "$schema": "https://dl.viam.dev/module.schema.json",
-  "module_id": "viam-viz:draw-motion-plan",
+  "module_id": "viam-viz:draw-tools",
   "visibility": "private",
   "url": "",
-  "description": "Modular worldstatestore service: as-arrows",
+  "description": "Tools for visualizing motion planning and execution.",
   "models": [
     {
       "api": "rdk:service:world_state_store",
-      "model": "viam-viz:draw-motion-plan:as-arrows",
-      "short_description": "Provide a short (100 characters or less) description of this model here",
-      "markdown_link": "README.md#model-viam-vizdraw-motion-planas-arrows"
+      "model": "viam-viz:draw-tools:draw-arrows",
+      "short_description": "Allows drawing poses as arrows.",
+      "markdown_link": "README.md#model-viam-vizdraw-toolsdraw-arrows"
+    },
+    {
+      "api": "rdk:component:button",
+      "model": "viam-viz:draw-tools:clear-arrows-button",
+      "short_description": "Clears all arrows from the world state.",
+      "markdown_link": "README.md#model-viam-vizdraw-toolsclear-arrows-button"
+    },
+    {
+      "api": "rdk:component:button",
+      "model": "viam-viz:draw-tools:draw-arrows-button",
+      "short_description": "Draws arrows from the world state.",
+      "markdown_link": "README.md#model-viam-vizdraw-toolsdraw-arrows-button"
     }
   ],
   "applications": null,
   "markdown_link": "README.md",
-  "entrypoint": "bin/draw-motion-plan",
+  "entrypoint": "bin/draw-tools",
   "first_run": "",
   "build": {
     "build": "make module.tar.gz",
     "setup": "make setup",
     "path": "module.tar.gz",
-    "arch": [
-      "linux/amd64",
-      "linux/arm64",
-      "darwin/arm64",
-      "windows/amd64"
-    ]
+    "arch": ["linux/amd64", "linux/arm64", "darwin/arm64", "windows/amd64"]
   }
 }

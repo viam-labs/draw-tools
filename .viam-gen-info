@@ -1,10 +1,10 @@
 {
-  "module_name": "draw-motion-plan",
+  "module_name": "draw-tools",
   "namespace": "viam-viz",
   "language": "go",
   "resource_type": "service",
   "resource_subtype": "worldstatestore",
-  "model_name": "as-arrows",
+  "model_name": "draw-arrows-world-state",
   "enable_cloud_build": true,
   "initialize_git": false,
   "generator_version": "0.1.0",

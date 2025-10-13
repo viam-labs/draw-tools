@@ -1,12 +1,12 @@
 
 GO_BUILD_ENV :=
 GO_BUILD_FLAGS :=
-MODULE_BINARY := bin/draw-motion-plan
+MODULE_BINARY := bin/draw-tools
 
 ifeq ($(VIAM_TARGET_OS), windows)
 	GO_BUILD_ENV += GOOS=windows GOARCH=amd64
 	GO_BUILD_FLAGS := -tags no_cgo
-	MODULE_BINARY = bin/draw-motion-plan.exe
+	MODULE_BINARY = bin/draw-tools.exe
 endif
 
 $(MODULE_BINARY): Makefile go.mod **/*.go 

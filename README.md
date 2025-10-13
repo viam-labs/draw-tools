@@ -1,26 +1,30 @@
-# Module draw-motion-plan
+# Module draw-tools
 
-A Viam module that visualizes poses as arrows in the World State Store service.
+A Viam module to support visualizations.
 
-## Model viam-viz:draw-motion-plan:as-arrows
+This module provides the following resources:
 
-This module integrates with Viam's World State Store service to visualize poses as arrows. It provides a simple interface for drawing custom arrows with specified poses, colors, and reference frames.
+1. **draw-arrows-world-state**: A world state store service that allows arrow visualization
+2. **clear-arrows-button**: A button component that clears all arrows when pressed
+3. **draw-arrows-button**: A button component that draws predefined arrows when pressed
+
+## Service: viam-viz:draw-tools:draw-arrows-world-state
+
+This provides a simple interface for drawing custom arrows with specified poses, colors, and reference frames.
 
 ### Configuration
 
-The following attribute template can be used to configure this model:
+The service dos not have any required attributes for configuration, can accept an `arrows` field to render arrows
+when the service is created.
 
-```json
-{}
-```
-
-#### Attributes
-
-This model currently has no required configuration attributes. The configuration is empty, making it simple to set up.
+- `arrows` (optional): Array of arrow objects to draw when the service starts. Each arrow object contains:
+  - `pose` (required): Object containing position and orientation
+  - `color` (optional): Object containing RGB color values (defaults to black)
+  - `parent_frame` (optional): Reference frame name (defaults to "world")
 
 ### DoCommand
 
-The module supports the following commands:
+The service supports the following commands:
 
 #### Draw
 
@@ -33,37 +37,10 @@ Adds arrows representing poses to the world state. Each arrow can have a custom 
 Each arrow object in the array should contain:
 
 - `pose` (required): Object containing position and orientation
-- `color` (optional): Object containing RGB color values
+- `color` (optional): Object containing RGB color values (defaults to black)
 - `parent_frame` (optional): Reference frame name (defaults to "world")
 
-**Examples:**
-
-Draw a single red arrow at the origin:
-
-```json
-{
-  "draw": [
-    {
-      "pose": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0,
-        "o_x": 0.0,
-        "o_y": 0.0,
-        "o_z": 1.0,
-        "theta": 0.0
-      },
-      "color": {
-        "r": 255,
-        "g": 0,
-        "b": 0
-      }
-    }
-  ]
-}
-```
-
-Draw multiple arrows with different colors and positions:
+**Command:**
 
 ```json
 {
@@ -118,6 +95,8 @@ Draw multiple arrows with different colors and positions:
 
 Removes all arrows from the world state.
 
+**Command:**
+
 ```json
 {
   "clear": {}
@@ -132,3 +111,82 @@ Removes all arrows from the world state.
   "arrows_removed": 2
 }
 ```
+
+## Component: viam-viz:draw-tools:clear-arrows-button
+
+A button component that removes all arrows from the world state when pressed. This component connects to an `draw-arrows-world-state` service and triggers the clear command when the button is pushed.
+
+### Configuration
+
+The following attribute template can be used to configure this component:
+
+```json
+{
+  "service": "draw-arrows-service" // must be included in `depends_on`
+}
+```
+
+**NOTE**: The `draw-arrows-world-state` you want to manage must be included as a dependency on this components `depends_on` configuration.
+
+#### Attributes
+
+- `service_name` (required): The name of the `draw-arrows-world-state` service to connect to
+
+## Component: viam-viz:draw-tools:draw-arrows-button
+
+A button component that draws predefined arrows to the world state when pressed. This component connects to a `draw-arrows-world-state` service and triggers the draw command with preconfigured arrows when the button is pushed.
+
+### Configuration
+
+The following attribute template can be used to configure this component:
+
+```json
+{
+  "service_": "draw-arrows-service", // must be included in `depends_on`
+  "arrows": [
+    {
+      "pose": {
+        "x": 1.0,
+        "y": 0.0,
+        "z": 0.0,
+        "o_x": 0.0,
+        "o_y": 0.0,
+        "o_z": 1.0,
+        "theta": 0.0
+      },
+      "color": {
+        "r": 255,
+        "g": 0,
+        "b": 0
+      },
+      "parent_frame": "base_link"
+    },
+    {
+      "pose": {
+        "x": 0.0,
+        "y": 1.0,
+        "z": 0.0,
+        "o_x": 0.0,
+        "o_y": 0.0,
+        "o_z": 1.0,
+        "theta": 90.0
+      },
+      "color": {
+        "r": 0,
+        "g": 255,
+        "b": 0
+      }
+    }
+  ]
+}
+```
+
+**NOTE**: The `draw-arrows-world-state` you want to manage must be included as a dependency on this components `depends_on` configuration.
+
+#### Attributes
+
+- `service_name` (required): The name of the `draw-arrows-world-state` service to connect to
+- `arrows` (required): Array of arrow objects to draw when the button is pressed. Each arrow object contains:
+  - `pose` (required): Object containing position and orientation
+  - `color` (optional): Object containing RGB color values (defaults to black)
+  - `parent_frame` (optional): Reference frame name (defaults to "world")

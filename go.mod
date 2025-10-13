@@ -1,4 +1,4 @@
-module drawmotionplan
+module drawtools
 
 go 1.25.1
 
