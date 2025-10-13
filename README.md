@@ -2,17 +2,19 @@
 
 A Viam module to support visualizations.
 
+## Model viam-viz:draw-tools:draw-arrows
+
 This module provides the following resources:
 
 1. **draw-arrows-world-state**: A world state store service that allows arrow visualization
 2. **clear-arrows-button**: A button component that clears all arrows when pressed
 3. **draw-arrows-button**: A button component that draws predefined arrows when pressed
 
-## Service: viam-viz:draw-tools:draw-arrows-world-state
+### Model viam-viz:draw-tools:draw-arrows-world-state
 
 This provides a simple interface for drawing custom arrows with specified poses, colors, and reference frames.
 
-### Configuration
+#### Configuration
 
 The service dos not have any required attributes for configuration, can accept an `arrows` field to render arrows
 when the service is created.
@@ -22,11 +24,11 @@ when the service is created.
   - `color` (optional): Object containing RGB color values (defaults to black)
   - `parent_frame` (optional): Reference frame name (defaults to "world")
 
-### DoCommand
+#### DoCommand
 
 The service supports the following commands:
 
-#### Draw
+##### Draw
 
 Adds arrows representing poses to the world state. Each arrow can have a custom pose, color, and parent frame.
 
@@ -91,7 +93,7 @@ Each arrow object in the array should contain:
 }
 ```
 
-#### Clear Arrows
+##### Clear Arrows
 
 Removes all arrows from the world state.
 
@@ -112,11 +114,11 @@ Removes all arrows from the world state.
 }
 ```
 
-## Component: viam-viz:draw-tools:clear-arrows-button
+### Model viam-viz:draw-tools:clear-arrows-button
 
 A button component that removes all arrows from the world state when pressed. This component connects to an `draw-arrows-world-state` service and triggers the clear command when the button is pushed.
 
-### Configuration
+#### Configuration
 
 The following attribute template can be used to configure this component:
 
@@ -128,15 +130,15 @@ The following attribute template can be used to configure this component:
 
 **NOTE**: The `draw-arrows-world-state` you want to manage must be included as a dependency on this components `depends_on` configuration.
 
-#### Attributes
+##### Attributes
 
 - `service_name` (required): The name of the `draw-arrows-world-state` service to connect to
 
-## Component: viam-viz:draw-tools:draw-arrows-button
+### Model viam-viz:draw-tools:draw-arrows-button
 
 A button component that draws predefined arrows to the world state when pressed. This component connects to a `draw-arrows-world-state` service and triggers the draw command with preconfigured arrows when the button is pushed.
 
-### Configuration
+#### Configuration
 
 The following attribute template can be used to configure this component:
 
@@ -183,7 +185,7 @@ The following attribute template can be used to configure this component:
 
 **NOTE**: The `draw-arrows-world-state` you want to manage must be included as a dependency on this components `depends_on` configuration.
 
-#### Attributes
+##### Attributes
 
 - `service_name` (required): The name of the `draw-arrows-world-state` service to connect to
 - `arrows` (required): Array of arrow objects to draw when the button is pressed. Each arrow object contains:
