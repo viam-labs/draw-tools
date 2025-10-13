@@ -3,7 +3,7 @@
   "module_id": "viam-viz:draw-tools",
   "visibility": "private",
   "url": "",
-  "description": "Tools for visualizing motion planning and execution.",
+  "description": "Tools to support visualizations.",
   "models": [
     {
       "api": "rdk:service:world_state_store",
