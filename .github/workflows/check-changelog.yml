@@ -1,0 +1,104 @@
+name: Check for Changelog
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+
+jobs:
+  check-changelog:
+    name: Verify changelog exists
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history to compare with base branch
+
+      - name: Check for changelog files
+        id: check_changelog
+        run: |
+          # Get the list of changed files in the PR
+          git fetch origin ${{ github.base_ref }}
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+          echo ""
+
+          # Check if any changelog files were added/modified
+          CHANGELOG_FILES=$(echo "$CHANGED_FILES" | grep "^\.changelogs/.*\.json$" || true)
+
+          if [ -z "$CHANGELOG_FILES" ]; then
+            echo "changelog_exists=false" >> $GITHUB_OUTPUT
+            echo "❌ No changelog files found in this PR"
+          else
+            echo "changelog_exists=true" >> $GITHUB_OUTPUT
+            echo "✓ Found changelog files:"
+            echo "$CHANGELOG_FILES"
+          fi
+
+      - name: Comment on PR if changelog is missing
+        if: steps.check_changelog.outputs.changelog_exists == 'false'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issue_number = context.issue.number;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // Check if we've already commented
+            const comments = await github.rest.issues.listComments({
+              owner,
+              repo,
+              issue_number,
+            });
+
+            const botComment = comments.data.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('📝 Changelog Required')
+            );
+
+            if (botComment) {
+              console.log('Changelog reminder comment already exists');
+              return;
+            }
+
+            // Post a new comment
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number,
+              body: `## 📝 Changelog Required
+
+            This pull request doesn't include a changelog file. Please add one by running:
+
+            \`\`\`bash
+            make change
+            \`\`\`
+
+            This command will prompt you to:
+            1. Select the type of change (patch/minor/major)
+            2. Provide a description of your changes
+
+            The changelog file will be automatically created in the \`.changelogs/\` directory. Make sure to commit it with your changes.
+
+            ---
+
+            **Why do we need this?**
+            Changelogs help us track changes and automatically generate release notes when bumping versions.`
+            });
+
+            console.log('Posted changelog reminder comment');
+
+      - name: Fail if changelog is missing
+        if: steps.check_changelog.outputs.changelog_exists == 'false'
+        run: |
+          echo "❌ This PR requires a changelog file."
+          echo ""
+          echo "Please run 'make change' to create one."
+          echo ""
+          exit 1

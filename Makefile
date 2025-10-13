@@ -34,3 +34,15 @@ all: test module.tar.gz
 
 setup:
 	go mod tidy
+
+.PHONY: change
+change:
+	@bash etc/change.sh
+
+.PHONY: bump-version
+bump-version:
+	@bash etc/bump-version.sh
+
+.PHONY: upload
+upload:
+	@bash etc/upload.sh $(DRY_RUN)

@@ -2,7 +2,7 @@
   "$schema": "https://dl.viam.dev/module.schema.json",
   "module_id": "viam-viz:draw-tools",
   "visibility": "private",
-  "url": "",
+  "url": "https://github.com/viam-labs/draw-tools",
   "description": "Tools to support visualizations.",
   "models": [
     {
