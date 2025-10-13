@@ -209,19 +209,15 @@ rm -f .changelogs/*.json
 echo -e "${GREEN}✓ Changelog files cleared${NC}"
 echo ""
 
-# Stage changes
-git add CHANGELOG.md .version .changelogs/
+# Stage changes (including deleted changelog files)
+git add CHANGELOG.md .version
+git add -A .changelogs/
 echo "Changes staged"
 
 # Create commit
 COMMIT_MESSAGE="$CURRENT_VERSION → $NEXT_VERSION"
 git commit -m "$COMMIT_MESSAGE"
 echo -e "${GREEN}✓ Committed: $COMMIT_MESSAGE${NC}"
-
-# Create tag
-TAG_NAME="v$NEXT_VERSION"
-git tag "$TAG_NAME"
-echo -e "${GREEN}✓ Tagged: $TAG_NAME${NC}"
 echo ""
 
 # Show summary
@@ -232,33 +228,34 @@ echo ""
 echo "Summary:"
 echo "  • Version: $CURRENT_VERSION → $NEXT_VERSION"
 echo "  • Branch: $BRANCH_NAME"
-echo "  • Tag: $TAG_NAME"
 echo "  • Commit: $COMMIT_MESSAGE"
 echo ""
 
 # Prompt to push
-echo -e "${YELLOW}Ready to push?${NC}"
+echo -e "${YELLOW}Ready to push the branch?${NC}"
 echo ""
-echo "This will push the branch and tag to origin."
 read -p "Push now? (y/n): " -n 1 -r
 echo ""
 
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo ""
-    echo "Pushing branch and tag..."
+    echo "Pushing branch..."
     git push origin "$BRANCH_NAME"
-    git push origin "$TAG_NAME"
     echo ""
-    echo -e "${GREEN}✓ Pushed successfully!${NC}"
+    echo -e "${GREEN}✓ Branch pushed successfully!${NC}"
     echo ""
     echo "Next steps:"
     echo "  1. Create a pull request to merge $BRANCH_NAME into main"
-    echo "  2. Once merged, the GitHub workflow will automatically upload the module"
+    echo "  2. Once the PR is approved and merged to main:"
+    echo "     → A GitHub Action will automatically create the tag: $NEXT_VERSION"
+    echo "     → The tag will trigger the module build and upload"
 else
     echo ""
     echo "Not pushing. To push later, run:"
     echo -e "  ${BLUE}git push origin $BRANCH_NAME${NC}"
-    echo -e "  ${BLUE}git push origin $TAG_NAME${NC}"
+    echo ""
+    echo "After pushing, create a PR to merge into main."
+    echo "The tag will be created automatically when the PR is merged."
 fi
 
 echo ""

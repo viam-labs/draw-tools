@@ -42,7 +42,3 @@ change:
 .PHONY: bump-version
 bump-version:
 	@bash etc/bump-version.sh
-
-.PHONY: upload
-upload:
-	@bash etc/upload.sh $(DRY_RUN)

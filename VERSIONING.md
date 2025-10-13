@@ -18,23 +18,6 @@ When you're ready to release a new version:
 make bump-version
 ```
 
-### After Pushing
-
-1. **Create a Pull Request** to merge the version branch into `main`
-2. **Merge the PR** - Once merged, the GitHub Action will automatically upload the module to all platforms defined in `meta.json`
-
-## Manual Uploads
-
-If you need to manually upload the current version (for re-uploads or testing):
-
-```bash
-# Upload current version to all platforms
-make upload
-
-# Dry-run to see what would be uploaded
-make upload DRY_RUN=1
-```
-
 ## Changelogs Directory
 
 The `.changelogs` directory contains changelog files that track changes for the next version release.
