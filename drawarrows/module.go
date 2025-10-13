@@ -213,7 +213,7 @@ func (service *worldStateService) emitChange(change worldstatestore.TransformCha
 }
 
 func (service *worldStateService) draw(ctx context.Context, arrows []lib.Arrow) (int, error) {
-	transforms, err := lib.DrawArrows(arrows)
+	transforms, err := lib.CreateArrowTransforms(arrows)
 	if err != nil {
 		service.logger.Errorw("Failed to create arrow transform", "error", err.Error())
 		return 0, err
