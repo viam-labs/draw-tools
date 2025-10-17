@@ -158,19 +158,23 @@ Current Version: $NEXT_VERSION
 EOF
 fi
 
-# Prepare the new changelog entry
-CHANGELOG_ENTRY=$(cat << EOF
+# Prepare changelog entry (will be written to temp file below)
+
+# Update existing changelog
+# First, update the Current Version line
+sed -i.bak "s/^Current Version: .*/Current Version: $NEXT_VERSION/" CHANGELOG.md && rm -f CHANGELOG.md.bak
+
+# Create a temporary file with the new changelog entry
+cat > /tmp/new_changelog_entry.txt << EOF
 
 ## $CURRENT_VERSION → $NEXT_VERSION
 
 *Released by $GIT_USER ($GIT_EMAIL) on $TIMESTAMP*
 
 EOF
-)
 
 # Add changes grouped by type
 for change_type in major minor patch; do
-    CHANGES=""
     for changelog_file in .changelogs/*.json; do
         if [ ! -f "$changelog_file" ]; then
             continue
@@ -182,28 +186,26 @@ for change_type in major minor patch; do
         AT=$(jq -r '.at // "Unknown"' "$changelog_file")
         
         if [ "$TYPE" = "$change_type" ]; then
-            CHANGES="${CHANGES}\n- **[$TYPE]** $MESSAGE *(by $BY at $AT)*"
+            echo "- **[$TYPE]** $MESSAGE *(by $BY at $AT)*" >> /tmp/new_changelog_entry.txt
         fi
     done
-    
-    if [ -n "$CHANGES" ]; then
-        CHANGELOG_ENTRY="${CHANGELOG_ENTRY}${CHANGES}\n"
-    fi
 done
 
-# Update existing changelog
-# First, update the Current Version line
-sed -i.bak "s/^Current Version: .*/Current Version: $NEXT_VERSION/" CHANGELOG.md && rm -f CHANGELOG.md.bak
-
-# Then insert new entry after the "---" line
-awk -v entry="$CHANGELOG_ENTRY" '
+# Insert the new entry after the "---" line
+awk '
     /^---$/ {
         print
-        printf "%s", entry
+        while ((getline line < "/tmp/new_changelog_entry.txt") > 0) {
+            print line
+        }
+        close("/tmp/new_changelog_entry.txt")
         next
     }
     { print }
 ' CHANGELOG.md > CHANGELOG.md.tmp && mv CHANGELOG.md.tmp CHANGELOG.md
+
+# Clean up temporary file
+rm -f /tmp/new_changelog_entry.txt
 
 echo -e "${GREEN}✓ CHANGELOG.md updated${NC}"
 
