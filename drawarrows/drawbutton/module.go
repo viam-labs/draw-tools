@@ -2,9 +2,10 @@ package drawarrowsbutton
 
 import (
 	"context"
-	"drawtools/lib"
 	"errors"
 	"fmt"
+
+	"github.com/viam-labs/draw-tools/lib"
 
 	button "go.viam.com/rdk/components/button"
 	"go.viam.com/rdk/logging"

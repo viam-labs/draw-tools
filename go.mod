@@ -1,4 +1,4 @@
-module drawtools
+module github.com/viam-labs/draw-tools
 
 go 1.25.1
 
