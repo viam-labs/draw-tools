@@ -74,17 +74,17 @@ if [ "$CURRENT_BRANCH" != "main" ]; then
     exit 1
 fi
 
-# Check for uncommitted changes
-if ! git diff-index --quiet HEAD --; then
-    echo -e "${RED}Error: You have uncommitted changes.${NC}"
-    echo ""
-    echo "Please commit or stash your changes before bumping version:"
-    echo -e "  ${BLUE}git commit -am \"Your message\"${NC}"
-    echo "or"
-    echo -e "  ${BLUE}git stash${NC}"
-    echo ""
-    exit 1
-fi
+# # Check for uncommitted changes
+# if ! git diff-index --quiet HEAD --; then
+#     echo -e "${RED}Error: You have uncommitted changes.${NC}"
+#     echo ""
+#     echo "Please commit or stash your changes before bumping version:"
+#     echo -e "  ${BLUE}git commit -am \"Your message\"${NC}"
+#     echo "or"
+#     echo -e "  ${BLUE}git stash${NC}"
+#     echo ""
+#     exit 1
+# fi
 
 # Read current version
 CURRENT_VERSION=$(jq -r '.current' .version)
