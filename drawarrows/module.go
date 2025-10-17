@@ -2,9 +2,10 @@ package drawarrows
 
 import (
 	"context"
-	"drawtools/lib"
 	"fmt"
 	"sync"
+
+	"github.com/viam-labs/draw-tools/lib"
 
 	"github.com/google/uuid"
 	commonPB "go.viam.com/api/common/v1"

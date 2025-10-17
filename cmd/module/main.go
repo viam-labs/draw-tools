@@ -1,9 +1,9 @@
 package main
 
 import (
-	drawarrows "drawtools/drawarrows"
-	cleararrowsbutton "drawtools/drawarrows/clearbutton"
-	drawarrowsbutton "drawtools/drawarrows/drawbutton"
+	drawarrows "github.com/viam-labs/draw-tools/drawarrows"
+	cleararrowsbutton "github.com/viam-labs/draw-tools/drawarrows/clearbutton"
+	drawarrowsbutton "github.com/viam-labs/draw-tools/drawarrows/drawbutton"
 
 	"go.viam.com/rdk/components/button"
 	"go.viam.com/rdk/module"
