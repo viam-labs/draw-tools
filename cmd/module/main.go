@@ -20,7 +20,7 @@ func main() {
 		resource.APIModel{API: worldstatestore.API, Model: drawarrows.WorldState},
 		resource.APIModel{API: button.API, Model: cleararrowsbutton.ClearArrows},
 		resource.APIModel{API: button.API, Model: drawarrowsbutton.DrawArrows},
-		resource.APIModel{API: button.API, Model: drawmesh.WorldState},
+		resource.APIModel{API: worldstatestore.API, Model: drawmesh.WorldState},
 		resource.APIModel{API: button.API, Model: clearmeshbutton.ClearMesh},
 		resource.APIModel{API: button.API, Model: drawmeshbutton.DrawMesh},
 	)
