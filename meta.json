@@ -22,6 +22,24 @@
       "model": "viam-viz:draw-tools:draw-arrows-button",
       "short_description": "Draws arrows from the world state.",
       "markdown_link": "README.md#model-viam-vizdraw-toolsdraw-arrows-button"
+    },
+    {
+      "api": "rdk:service:world_state_store",
+      "model": "viam-viz:draw-tools:draw-mesh-world-state",
+      "short_description": "Allows drawing 3D meshes from PLY files.",
+      "markdown_link": "README.md#model-viam-vizdraw-toolsdraw-mesh-world-state"
+    },
+    {
+      "api": "rdk:component:button",
+      "model": "viam-viz:draw-tools:clear-mesh-button",
+      "short_description": "Clears all meshes from the world state.",
+      "markdown_link": "README.md#model-viam-vizdraw-toolsclear-mesh-button"
+    },
+    {
+      "api": "rdk:component:button",
+      "model": "viam-viz:draw-tools:draw-mesh-button",
+      "short_description": "Draws a mesh from a specified PLY file path.",
+      "markdown_link": "README.md#model-viam-vizdraw-toolsdraw-mesh-button"
     }
   ],
   "applications": null,
