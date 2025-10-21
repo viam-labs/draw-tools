@@ -2,6 +2,8 @@ package lib
 
 import (
 	"fmt"
+
+	"go.viam.com/rdk/spatialmath"
 )
 
 type Pose struct {
@@ -41,4 +43,16 @@ func ParsePose(poseData any) (Pose, error) {
 		OX: oX, OY: oY, OZ: oZ,
 		Theta: theta,
 	}, nil
+}
+
+func PoseFromSpatialMath(pose spatialmath.Pose) Pose {
+	return Pose{
+		X:     pose.Point().X,
+		Y:     pose.Point().Y,
+		Z:     pose.Point().Z,
+		OX:    pose.Orientation().OrientationVectorRadians().OX,
+		OY:    pose.Orientation().OrientationVectorRadians().OY,
+		OZ:    pose.Orientation().OrientationVectorRadians().OZ,
+		Theta: pose.Orientation().OrientationVectorRadians().Theta,
+	}
 }
