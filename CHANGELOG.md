@@ -1,8 +1,14 @@
 # Changelog
 
-Current Version: 0.1.0
+Current Version: 0.2.0
 
 ---
+
+## 0.1.0 → 0.2.0
+
+*Released by Devin C. (devin@viam.com) on 2025-10-21 10:38:59 EDT*
+
+- **[minor]** add drawmesh models *(by Matthew MacFarquhar at 2025-10-20 16:34:51 EDT)*
 
 ## 0.0.2 → 0.1.0
 
