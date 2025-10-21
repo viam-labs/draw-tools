@@ -192,3 +192,110 @@ The following attribute template can be used to configure this component:
   - `pose` (required): Object containing position and orientation
   - `color` (optional): Object containing RGB color values (defaults to black)
   - `parent_frame` (optional): Reference frame name (defaults to "world")
+
+## Model viam-viz:draw-tools:draw-mesh
+
+This module provides the following resources:
+
+1. **draw-mesh-world-state**: A world state store service that allows mesh visualization from PLY files
+2. **clear-mesh-button**: A button component that clears all meshes when pressed
+3. **draw-mesh-button**: A button component that draws a mesh from a specified file path when pressed
+
+### Model viam-viz:draw-tools:draw-mesh-world-state
+
+This provides a simple interface for drawing 3D meshes from PLY files into the world state.
+
+#### Configuration
+
+The service does not have any required attributes for configuration.
+
+#### DoCommand
+
+The service supports the following commands:
+
+##### Draw
+
+Adds a mesh from a PLY file to the world state. The mesh is positioned at the origin (world frame) by default.
+
+**Parameters:**
+
+- `draw` (required): String path to the PLY file to load and display
+
+**Command:**
+
+```json
+{
+  "draw": "/path/to/mesh.ply"
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true
+}
+```
+
+##### Clear Meshes
+
+Removes all meshes from the world state.
+
+**Command:**
+
+```json
+{
+  "clear": {}
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "mesh_removed": 1
+}
+```
+
+### Model viam-viz:draw-tools:clear-mesh-button
+
+A button component that removes all meshes from the world state when pressed. This component connects to a `draw-mesh-world-state` service and triggers the clear command when the button is pushed.
+
+#### Configuration
+
+The following attribute template can be used to configure this component:
+
+```json
+{
+  "service_name": "draw-mesh-service"
+}
+```
+
+**NOTE**: The `draw-mesh-world-state` service you want to manage must be included as a dependency in this component's `depends_on` configuration.
+
+##### Attributes
+
+- `service_name` (required): The name of the `draw-mesh-world-state` service to connect to
+
+### Model viam-viz:draw-tools:draw-mesh-button
+
+A button component that draws a 3D mesh from a PLY file to the world state when pressed. This component connects to a `draw-mesh-world-state` service and triggers the draw command with a preconfigured file path when the button is pushed.
+
+#### Configuration
+
+The following attribute template can be used to configure this component:
+
+```json
+{
+  "service_name": "draw-mesh-service",
+  "model_path": "/path/to/mesh.ply"
+}
+```
+
+**NOTE**: The `draw-mesh-world-state` service you want to manage must be included as a dependency in this component's `depends_on` configuration.
+
+##### Attributes
+
+- `service_name` (required): The name of the `draw-mesh-world-state` service to connect to
+- `model_path` (required): Path to the PLY file containing the 3D mesh to display
