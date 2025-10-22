@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/viam-labs/draw-tools/lib"
 	button "go.viam.com/rdk/components/button"
 	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/resource"
@@ -24,8 +25,9 @@ func init() {
 }
 
 type Config struct {
-	ServiceName string `json:"service_name"`
-	ModelPath   string `json:"model_path"`
+	ServiceName string    `json:"service_name"`
+	ModelPath   string    `json:"model_path"`
+	Color       lib.Color `json:"color"`
 }
 
 func (config *Config) Validate(path string) ([]string, []string, error) {
@@ -98,8 +100,16 @@ func (s *drawMeshButton) Name() resource.Name {
 }
 
 func (s *drawMeshButton) Push(ctx context.Context, extra map[string]interface{}) error {
+
+	color := lib.Color{R: 0, G: 0, B: 255}
+	if s.config.Color != (lib.Color{}) {
+		color = s.config.Color
+	}
 	result, err := s.service.DoCommand(ctx, map[string]interface{}{
-		"draw": s.config.ModelPath,
+		"draw": map[string]interface{}{
+			"model_path": s.config.ModelPath,
+			"color":      color,
+		},
 	})
 	if err != nil {
 		return err
