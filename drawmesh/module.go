@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/viam-labs/draw-tools/lib"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/google/uuid"
 	commonPB "go.viam.com/api/common/v1"
@@ -149,7 +150,7 @@ func (service *worldStateService) StreamTransformChanges(ctx context.Context, ex
 	return worldstatestore.NewTransformChangeStreamFromChannel(ctx, subscriberChan), nil
 }
 
-func (s *worldStateService) draw(meshPath string) error {
+func (s *worldStateService) draw(meshPath string, color lib.Color) error {
 	// Read PLY from the file specified in the config (ModelPath)
 	file, err := os.Open(meshPath)
 	if err != nil {
@@ -174,6 +175,14 @@ func (s *worldStateService) draw(meshPath string) error {
 		return err
 	}
 
+	metadata, err := structpb.NewStruct(map[string]any{
+		"color": map[string]any{
+			"r": int(color.R),
+			"g": int(color.G),
+			"b": int(color.B),
+		},
+	})
+
 	transform := commonPB.Transform{
 		ReferenceFrame: fmt.Sprintf("mesh-%x", id),
 		PoseInObserverFrame: &commonPB.PoseInFrame{
@@ -190,6 +199,7 @@ func (s *worldStateService) draw(meshPath string) error {
 		},
 		Uuid:           uuidBytes,
 		PhysicalObject: geometry,
+		Metadata:       metadata,
 	}
 
 	s.transformsMutex.Lock()
@@ -200,16 +210,23 @@ func (s *worldStateService) draw(meshPath string) error {
 		ChangeType: v1.TransformChangeType_TRANSFORM_CHANGE_TYPE_ADDED,
 		Transform:  &transform,
 	})
-
-	s.logger.Infow("Transform:", &transform)
 	s.logger.Infow("Successfully added transform to world state store:", id)
 
 	return nil
 }
 
 func (service *worldStateService) DoCommand(ctx context.Context, cmd map[string]any) (map[string]any, error) {
-	if meshPath, ok := cmd["draw"]; ok {
-		err := service.draw(meshPath.(string))
+	if drawCmd, ok := cmd["draw"]; ok {
+		meshPath := drawCmd.(map[string]any)["model_path"].(string)
+		colorJson := drawCmd.(map[string]any)["color"]
+		color, err := lib.ParseColor(colorJson, lib.Color{R: 0, G: 0, B: 255})
+		if err != nil {
+			return map[string]any{
+				"success": false,
+				"error":   err.Error(),
+			}, err
+		}
+		err = service.draw(meshPath, color)
 		if err != nil {
 			return map[string]any{
 				"success": false,
