@@ -1,8 +1,16 @@
 # Changelog
 
-Current Version: 0.2.0
+Current Version: 0.3.0
 
 ---
+
+## 0.2.0 → 0.3.0
+
+*Released by Devin C. (devin@viam.com) on 2025-10-23 17:12:59 EDT*
+
+- **[minor]** Add GetProgressColor helper *(by Devin C. at 2025-10-23 17:12:09 EDT)*
+- **[minor]** accept color configuration for drawMesh model *(by Matthew MacFarquhar at 2025-10-22 13:17:31 EDT)*
+- **[patch]** Add PoseFromSpatialMath helper *(by Devin C. at 2025-10-21 11:15:31 EDT)*
 
 ## 0.1.0 → 0.2.0
 
