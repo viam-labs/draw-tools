@@ -1,0 +1,6 @@
+{
+  "type": "minor",
+  "message": "Add mm to m conversion for pose and spatial math pose",
+  "by": "Devin C.",
+  "at": "2025-10-23 17:32:31 EDT"
+}

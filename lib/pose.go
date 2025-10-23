@@ -3,6 +3,7 @@ package lib
 import (
 	"fmt"
 
+	"github.com/golang/geo/r3"
 	"go.viam.com/rdk/spatialmath"
 )
 
@@ -55,4 +56,27 @@ func PoseFromSpatialMath(pose spatialmath.Pose) Pose {
 		OZ:    pose.Orientation().OrientationVectorRadians().OZ,
 		Theta: pose.Orientation().OrientationVectorRadians().Theta,
 	}
+}
+
+func PoseToMeters(pose Pose) Pose {
+	return Pose{
+		X:     pose.X / 1000.0,
+		Y:     pose.Y / 1000.0,
+		Z:     pose.Z / 1000.0,
+		OX:    pose.OX,
+		OY:    pose.OY,
+		OZ:    pose.OZ,
+		Theta: pose.Theta,
+	}
+}
+
+func SpatialMathPoseToMeters(pose spatialmath.Pose) spatialmath.Pose {
+	position := pose.Point()
+	convertedPosition := r3.Vector{
+		X: position.X / 1000.0,
+		Y: position.Y / 1000.0,
+		Z: position.Z / 1000.0,
+	}
+
+	return spatialmath.NewPose(convertedPosition, pose.Orientation())
 }
