@@ -9,7 +9,7 @@ on:
 
 jobs:
   create-tag:
-    name: Create version tag
+    name: Create version tags (both X.Y.Z and vX.Y.Z)
     runs-on: ubuntu-latest
     environment: CI
     permissions:
@@ -73,16 +73,18 @@ jobs:
 
           echo "✓ Versions match in both .version and CHANGELOG.md"
 
-      - name: Check if tag already exists
+      - name: Check if tags already exist
         id: check_tag
         run: |
           VERSION="${{ steps.get_version.outputs.version }}"
-          if git rev-parse "$VERSION" >/dev/null 2>&1; then
+          V_TAG="v$VERSION"
+
+          if git rev-parse "$VERSION" >/dev/null 2>&1 && git rev-parse "$V_TAG" >/dev/null 2>&1; then
             echo "exists=true" >> $GITHUB_OUTPUT
-            echo "Tag $VERSION already exists"
+            echo "Both tags $VERSION and $V_TAG already exist"
           else
             echo "exists=false" >> $GITHUB_OUTPUT
-            echo "Tag $VERSION does not exist yet"
+            echo "Tags $VERSION and/or $V_TAG do not exist yet"
           fi
 
       - name: Verify version is newer than latest tag
@@ -153,21 +155,28 @@ jobs:
             exit 1
           fi
 
-      - name: Create and push tag
+      - name: Create and push tags
         if: steps.check_tag.outputs.exists == 'false' && steps.check_version.outputs.is_newer == 'true'
         run: |
           VERSION="${{ steps.get_version.outputs.version }}"
+          V_TAG="v$VERSION"
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git tag -a "$VERSION" -m "Release version $VERSION"
+          # Create both tags: X.Y.Z (for Viam) and vX.Y.Z (for Go modules)
+          git tag -a "$VERSION" -m "Viam module version $VERSION"
+          git tag -a "$V_TAG" -m "Go module version $V_TAG"
+
+          # Push both tags
           git push origin "$VERSION"
+          git push origin "$V_TAG"
 
-          echo "✓ Created and pushed tag: $VERSION"
+          echo "✓ Created and pushed tags: $VERSION and $V_TAG"
 
-      - name: Tag already exists
+      - name: Tags already exist
         if: steps.check_tag.outputs.exists == 'true'
         run: |
           VERSION="${{ steps.get_version.outputs.version }}"
-          echo "ℹ️  Tag $VERSION already exists, skipping tag creation"
+          V_TAG="v$VERSION"
+          echo "ℹ️  Both tags $VERSION and $V_TAG already exist, skipping tag creation"
