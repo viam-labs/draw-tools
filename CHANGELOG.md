@@ -1,8 +1,15 @@
 # Changelog
 
-Current Version: 0.3.0
+Current Version: 0.4.0
 
 ---
+
+## 0.3.0 → 0.4.0
+
+*Released by Devin C. (devin@viam.com) on 2025-10-25 08:33:51 EDT*
+
+- **[minor]** Add mm to m conversion for pose and spatial math pose *(by Devin C. at 2025-10-23 17:32:31 EDT)*
+- **[minor]** Module cleanup, prepping for broader usage, adding tests, add doc gen for lib *(by Devin C. at 2025-10-25 08:30:40 EDT)*
 
 ## 0.2.0 → 0.3.0
 
