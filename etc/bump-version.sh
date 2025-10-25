@@ -219,7 +219,7 @@ echo -e "${GREEN}✓ Changelog files cleared${NC}"
 echo ""
 
 # Stage changes (including deleted changelog files)
-git add CHANGELOG.md .version
+git add CHANGELOG.md .version DOCS.md
 git add -A .changelogs/
 echo "Changes staged"
 
