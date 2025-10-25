@@ -13,7 +13,6 @@ import (
 	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/resource"
 	worldstatestore "go.viam.com/rdk/services/worldstatestore"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 var (
@@ -29,7 +28,7 @@ func init() {
 }
 
 type Config struct {
-	Arrows []lib.Arrow `json:"arrows"`
+	Arrows []lib.ArrowJSON `json:"arrows"`
 }
 
 func (cfg *Config) Validate(path string) ([]string, []string, error) {
@@ -46,7 +45,7 @@ type worldStateService struct {
 	cancelCtx  context.Context
 	cancelFunc func()
 
-	transforms      map[string]*commonPB.Transform
+	transforms      map[string]*lib.Arrow
 	transformsMutex sync.RWMutex
 
 	changeStream chan worldstatestore.TransformChange
@@ -82,14 +81,28 @@ func NewWorldStateService(
 		config:       conf,
 		cancelCtx:    cancelCtx,
 		cancelFunc:   cancelFunc,
-		transforms:   make(map[string]*commonPB.Transform),
+		transforms:   make(map[string]*lib.Arrow),
 		changeStream: make(chan worldstatestore.TransformChange, 100),
 	}
 
 	if conf.Arrows != nil {
+		arrows := make([]*lib.Arrow, 0, len(conf.Arrows))
 		for _, toDraw := range conf.Arrows {
-			service.draw(ctx, []lib.Arrow{toDraw})
+			pose := lib.PoseFromJSON(toDraw.Pose)
+			id, err := lib.UUIDFromString(toDraw.UUID)
+			if err != nil {
+				return nil, err
+			}
+
+			arrow, err := lib.CreateArrow(pose, toDraw.Name, id.Bytes(), &toDraw.Color, toDraw.ParentFrame)
+			if err != nil {
+				return nil, err
+			}
+
+			arrows = append(arrows, arrow)
 		}
+
+		service.draw(ctx, arrows)
 	}
 
 	return service, nil
@@ -104,19 +117,20 @@ func (service *worldStateService) ListUUIDs(ctx context.Context, extra map[strin
 	defer service.transformsMutex.RUnlock()
 
 	uuids := make([][]byte, 0, len(service.transforms))
-	for _, transform := range service.transforms {
-		parsedId, err := uuid.FromBytes(transform.Uuid)
+	for _, arrow := range service.transforms {
+		parsedId, err := uuid.FromBytes(arrow.Uuid)
 		if err != nil {
 			service.logger.Errorw("Failed to parse UUID", "error", err.Error())
 			return nil, err
 		}
+
 		uuids = append(uuids, parsedId[:])
 	}
 
 	return uuids, nil
 }
 
-func (service *worldStateService) GetTransform(ctx context.Context, id []byte, extra map[string]any) (*commonPB.Transform, error) {
+func (service *worldStateService) GetTransform(ctx context.Context, id []byte, extra map[string]any) (*lib.Arrow, error) {
 	service.transformsMutex.RLock()
 	defer service.transformsMutex.RUnlock()
 
@@ -126,12 +140,12 @@ func (service *worldStateService) GetTransform(ctx context.Context, id []byte, e
 		return nil, err
 	}
 
-	transform, ok := service.transforms[uuidString.String()]
+	arrow, ok := service.transforms[uuidString.String()]
 	if !ok {
 		return nil, fmt.Errorf("transform not found for UUID: %x", uuidString)
 	}
 
-	return transform, nil
+	return arrow, nil
 }
 
 func (service *worldStateService) StreamTransformChanges(ctx context.Context, extra map[string]any) (*worldstatestore.TransformChangeStream, error) {
@@ -213,32 +227,25 @@ func (service *worldStateService) emitChange(change worldstatestore.TransformCha
 	}
 }
 
-func (service *worldStateService) draw(ctx context.Context, arrows []lib.Arrow) (int, error) {
-	transforms, err := lib.CreateArrowTransforms(arrows)
-	if err != nil {
-		service.logger.Errorw("Failed to create arrow transform", "error", err.Error())
-		return 0, err
-	}
-
+func (service *worldStateService) draw(ctx context.Context, arrows []*lib.Arrow) (int, error) {
 	service.transformsMutex.Lock()
 	defer service.transformsMutex.Unlock()
 
-	for i := range transforms {
-		transform := &transforms[i]
-		id, err := uuid.FromBytes(transform.Uuid)
+	for _, arrow := range arrows {
+		id, err := uuid.FromBytes(arrow.Uuid)
 		if err != nil {
 			service.logger.Errorw("Failed to parse UUID", "error", err.Error())
 			return 0, err
 		}
 
-		service.transforms[id.String()] = transform
+		service.transforms[id.String()] = arrow
 		service.emitChange(worldstatestore.TransformChange{
 			ChangeType: v1.TransformChangeType_TRANSFORM_CHANGE_TYPE_ADDED,
-			Transform:  transform,
+			Transform:  arrow,
 		})
 	}
 
-	return len(transforms), nil
+	return len(arrows), nil
 }
 
 func (service *worldStateService) clear(ctx context.Context) (int, error) {
@@ -263,39 +270,4 @@ func (service *worldStateService) clear(ctx context.Context) (int, error) {
 
 	service.transforms = make(map[string]*commonPB.Transform)
 	return count, nil
-}
-
-func (service *worldStateService) updateArrowColor(id string, newColor lib.Color) {
-	transform, exists := service.transforms[id]
-	if !exists {
-		return
-	}
-
-	metadata, err := structpb.NewStruct(map[string]any{
-		"shape": "arrow",
-		"color": map[string]any{
-			"r": int(newColor.R),
-			"g": int(newColor.G),
-			"b": int(newColor.B),
-		},
-	})
-
-	if err != nil {
-		service.logger.Errorw("Failed to update arrow color", "uuid", fmt.Sprintf("%x", id), "error", err.Error())
-		return
-	}
-
-	transform.Metadata = metadata
-	partialTransform := &commonPB.Transform{
-		Uuid:     transform.Uuid,
-		Metadata: metadata,
-	}
-
-	change := worldstatestore.TransformChange{
-		ChangeType:    v1.TransformChangeType_TRANSFORM_CHANGE_TYPE_UPDATED,
-		Transform:     partialTransform,
-		UpdatedFields: []string{"metadata"},
-	}
-
-	service.emitChange(change)
 }

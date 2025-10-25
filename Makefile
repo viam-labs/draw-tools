@@ -39,6 +39,11 @@ setup:
 change:
 	@bash etc/change.sh
 
+.PHONY: docs
+docs:
+	@bash etc/generate-docs.sh
+
 .PHONY: bump-version
-bump-version:
+bump-version: docs
 	@bash etc/bump-version.sh
+ 

@@ -16,13 +16,75 @@ This provides a simple interface for drawing custom arrows with specified poses,
 
 #### Configuration
 
-The service dos not have any required attributes for configuration, can accept an `arrows` field to render arrows
+The service does not have any required attributes for configuration, but can accept an `arrows` field to render arrows
 when the service is created.
 
 - `arrows` (optional): Array of arrow objects to draw when the service starts. Each arrow object contains:
   - `pose` (required): Object containing position and orientation
-  - `color` (optional): Object containing RGB color values (defaults to black)
+  - `name` (optional): Name of the arrow frame (defaults to "arrow-{uuid}")
+  - `color` (optional): Object containing RGB color values (defaults to yellow)
   - `parent_frame` (optional): Reference frame name (defaults to "world")
+  - `uuid` (optional): UUID string for the arrow (generates new UUID if not provided)
+
+**Configuration**
+
+```json
+{
+  "arrows": [
+    {
+      "name": "arrow-1",
+      "pose": {
+        "x": 1,
+        "y": 0,
+        "z": 0,
+        "o_x": 1,
+        "o_y": 0,
+        "o_z": 0,
+        "theta": 0
+      },
+      "color": {
+        "r": 255,
+        "g": 0,
+        "b": 0
+      }
+    },
+    {
+      "name": "arrow-2",
+      "pose": {
+        "x": 0,
+        "y": 1,
+        "z": 0,
+        "o_x": 0,
+        "o_y": 1,
+        "o_z": 0,
+        "theta": 90
+      },
+      "color": {
+        "r": 0,
+        "g": 255,
+        "b": 0
+      }
+    },
+    {
+      "name": "arrow-3",
+      "pose": {
+        "x": 0,
+        "y": 0,
+        "z": 1,
+        "o_x": 0,
+        "o_y": 0,
+        "o_z": 1,
+        "theta": 180
+      },
+      "color": {
+        "r": 0,
+        "g": 0,
+        "b": 255
+      }
+    }
+  ]
+}
+```
 
 #### DoCommand
 
@@ -39,8 +101,10 @@ Adds arrows representing poses to the world state. Each arrow can have a custom 
 Each arrow object in the array should contain:
 
 - `pose` (required): Object containing position and orientation
-- `color` (optional): Object containing RGB color values (defaults to black)
+- `name` (optional): Name of the arrow frame (defaults to "arrow-{uuid}")
+- `color` (optional): Object containing RGB color values (defaults to yellow)
 - `parent_frame` (optional): Reference frame name (defaults to "world")
+- `uuid` (optional): UUID string for the arrow (generates new UUID if not provided)
 
 **Command:**
 
@@ -48,36 +112,54 @@ Each arrow object in the array should contain:
 {
   "draw": [
     {
+      "name": "arrow-4",
       "pose": {
-        "x": 1.0,
-        "y": 0.0,
-        "z": 0.0,
-        "o_x": 0.0,
-        "o_y": 0.0,
-        "o_z": 1.0,
-        "theta": 0.0
+        "x": -1,
+        "y": 0,
+        "z": 0,
+        "o_x": -1,
+        "o_y": 0,
+        "o_z": 0,
+        "theta": 0
       },
       "color": {
         "r": 255,
-        "g": 0,
+        "g": 255,
         "b": 0
-      },
-      "parent_frame": "base_link"
+      }
     },
     {
+      "name": "arrow-5",
       "pose": {
-        "x": 0.0,
-        "y": 1.0,
-        "z": 0.0,
-        "o_x": 0.0,
-        "o_y": 0.0,
-        "o_z": 1.0,
-        "theta": 90.0
+        "x": 0,
+        "y": -1,
+        "z": 0,
+        "o_x": 0,
+        "o_y": -1,
+        "o_z": 0,
+        "theta": -90
       },
       "color": {
         "r": 0,
         "g": 255,
-        "b": 0
+        "b": 255
+      }
+    },
+    {
+      "name": "arrow-6",
+      "pose": {
+        "x": 0,
+        "y": 0,
+        "z": -1,
+        "o_x": 0,
+        "o_y": 0,
+        "o_z": -1,
+        "theta": -180
+      },
+      "color": {
+        "r": 255,
+        "g": 0,
+        "b": 255
       }
     }
   ]
@@ -89,11 +171,11 @@ Each arrow object in the array should contain:
 ```json
 {
   "success": true,
-  "arrows_added": 2
+  "arrows_added": 3
 }
 ```
 
-##### Clear Arrows
+##### Clear
 
 Removes all arrows from the world state.
 
@@ -110,7 +192,7 @@ Removes all arrows from the world state.
 ```json
 {
   "success": true,
-  "arrows_removed": 2
+  "arrows_removed": 3
 }
 ```
 
@@ -124,7 +206,7 @@ The following attribute template can be used to configure this component:
 
 ```json
 {
-  "service": "draw-arrows-service" // must be included in `depends_on`
+  "service_name": "draw-arrows-service" // must be included in `depends_on`
 }
 ```
 
@@ -144,39 +226,57 @@ The following attribute template can be used to configure this component:
 
 ```json
 {
-  "service_": "draw-arrows-service", // must be included in `depends_on`
+  "service_name": "draw-arrows-service", // must be included in `depends_on`
   "arrows": [
     {
+      "name": "arrow-4",
       "pose": {
-        "x": 1.0,
-        "y": 0.0,
-        "z": 0.0,
-        "o_x": 0.0,
-        "o_y": 0.0,
-        "o_z": 1.0,
-        "theta": 0.0
+        "x": -1,
+        "y": 0,
+        "z": 0,
+        "o_x": -1,
+        "o_y": 0,
+        "o_z": 0,
+        "theta": 0
       },
       "color": {
         "r": 255,
-        "g": 0,
+        "g": 255,
         "b": 0
-      },
-      "parent_frame": "base_link"
+      }
     },
     {
+      "name": "arrow-5",
       "pose": {
-        "x": 0.0,
-        "y": 1.0,
-        "z": 0.0,
-        "o_x": 0.0,
-        "o_y": 0.0,
-        "o_z": 1.0,
-        "theta": 90.0
+        "x": 0,
+        "y": -1,
+        "z": 0,
+        "o_x": 0,
+        "o_y": -1,
+        "o_z": 0,
+        "theta": -90
       },
       "color": {
         "r": 0,
         "g": 255,
-        "b": 0
+        "b": 255
+      }
+    },
+    {
+      "name": "arrow-6",
+      "pose": {
+        "x": 0,
+        "y": 0,
+        "z": -1,
+        "o_x": 0,
+        "o_y": 0,
+        "o_z": -1,
+        "theta": -180
+      },
+      "color": {
+        "r": 255,
+        "g": 0,
+        "b": 255
       }
     }
   ]
@@ -190,8 +290,10 @@ The following attribute template can be used to configure this component:
 - `service_name` (required): The name of the `draw-arrows-world-state` service to connect to
 - `arrows` (required): Array of arrow objects to draw when the button is pressed. Each arrow object contains:
   - `pose` (required): Object containing position and orientation
-  - `color` (optional): Object containing RGB color values (defaults to black)
+  - `name` (optional): Name of the arrow frame (defaults to "arrow-{uuid}")
+  - `color` (optional): Object containing RGB color values (defaults to yellow)
   - `parent_frame` (optional): Reference frame name (defaults to "world")
+  - `uuid` (optional): UUID string for the arrow (generates new UUID if not provided)
 
 ## Model viam-viz:draw-tools:draw-mesh
 

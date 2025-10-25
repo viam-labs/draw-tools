@@ -2,12 +2,22 @@ package lib
 
 import "fmt"
 
+// Color represents an RGB color value with red, green, and blue components.
+// Each component is an 8-bit unsigned integer (0-255).
 type Color struct {
-	R uint8 `json:"r"`
-	G uint8 `json:"g"`
-	B uint8 `json:"b"`
+	R uint8 `json:"r"` // Red component (0-255)
+	G uint8 `json:"g"` // Green component (0-255)
+	B uint8 `json:"b"` // Blue component (0-255)
 }
 
+// ParseColor parses a color from JSON data with validation and clamping.
+// It handles various numeric types and clamps RGB values to the valid range (0-255).
+//
+// Parameters:
+//   - colorData: JSON object containing color data (r, g, b fields)
+//   - defaultValue: Default color to use for missing values
+//
+// Returns the parsed color with values clamped to 0-255 range or an error if parsing fails.
 func ParseColor(colorData any, defaultValue Color) (Color, error) {
 	colorMap, ok := colorData.(map[string]any)
 	if !ok {
@@ -18,64 +28,30 @@ func ParseColor(colorData any, defaultValue Color) (Color, error) {
 		return defaultValue, nil
 	}
 
-	r := ParseFloat64(colorMap["r"], float64(defaultValue.R))
-	g := ParseFloat64(colorMap["g"], float64(defaultValue.G))
-	b := ParseFloat64(colorMap["b"], float64(defaultValue.B))
+	r := parseInt(colorMap["r"], int(defaultValue.R))
+	if r < 0 {
+		r = 0
+	} else if r > 255 {
+		r = 255
+	}
+
+	g := parseInt(colorMap["g"], int(defaultValue.G))
+	if g < 0 {
+		g = 0
+	} else if g > 255 {
+		g = 255
+	}
+
+	b := parseInt(colorMap["b"], int(defaultValue.B))
+	if b < 0 {
+		b = 0
+	} else if b > 255 {
+		b = 255
+	}
 
 	return Color{
 		R: uint8(r),
 		G: uint8(g),
 		B: uint8(b),
 	}, nil
-}
-
-// GetProgressColor maps progress to color spectrum using RGB interpolation
-//
-//	0.0 -> 0.2: Blue to Cyan (0,0,255) -> (0,255,255)
-//	0.2 -> 0.4: Cyan to Green (0,255,255) -> (0,255,0)
-//	0.4 -> 0.6: Green to Yellow (0,255,0) -> (255,255,0)
-//	0.6 -> 0.8: Yellow to Orange (255,255,0) -> (255,165,0)
-//	0.8 -> 1.0: Orange to Red (255,165,0) -> (255,0,0)
-func GetProgressColor(current, total int) Color {
-	if total <= 1 {
-		return Color{R: 0, G: 0, B: 255}
-	}
-
-	progress := float64(current) / float64(total-1)
-	if progress <= 0.2 {
-		mod := progress / 0.2
-		return Color{
-			R: 0,
-			G: uint8(255 * mod),
-			B: 255,
-		}
-	} else if progress <= 0.4 {
-		mod := (progress - 0.2) / 0.2
-		return Color{
-			R: 0,
-			G: 255,
-			B: uint8(255 * (1 - mod)),
-		}
-	} else if progress <= 0.6 {
-		mod := (progress - 0.4) / 0.2
-		return Color{
-			R: uint8(255 * mod),
-			G: 255,
-			B: 0,
-		}
-	} else if progress <= 0.8 {
-		mod := (progress - 0.6) / 0.2
-		return Color{
-			R: 255,
-			G: uint8(255 - 90*mod),
-			B: 0,
-		}
-	} else {
-		mod := (progress - 0.8) / 0.2
-		return Color{
-			R: 255,
-			G: uint8(165 - 165*mod),
-			B: 0,
-		}
-	}
 }

@@ -168,8 +168,6 @@ func (s *worldStateService) draw(meshPath string, color lib.Color) error {
 
 	geometry := mesh.ToProtobuf()
 	uuidBytes := lib.GenerateUUID()
-
-	id, err := uuid.FromBytes(uuidBytes)
 	if err != nil {
 		s.logger.Errorw("Failed to parse UUID", "error", err.Error())
 		return err
@@ -184,7 +182,7 @@ func (s *worldStateService) draw(meshPath string, color lib.Color) error {
 	})
 
 	transform := commonPB.Transform{
-		ReferenceFrame: fmt.Sprintf("mesh-%x", id),
+		ReferenceFrame: fmt.Sprintf("mesh-%s", uuidBytes.String()),
 		PoseInObserverFrame: &commonPB.PoseInFrame{
 			ReferenceFrame: "world",
 			Pose: &commonPB.Pose{
@@ -197,7 +195,7 @@ func (s *worldStateService) draw(meshPath string, color lib.Color) error {
 				Theta: 0,
 			},
 		},
-		Uuid:           uuidBytes,
+		Uuid:           uuidBytes.Bytes(),
 		PhysicalObject: geometry,
 		Metadata:       metadata,
 	}
@@ -205,12 +203,12 @@ func (s *worldStateService) draw(meshPath string, color lib.Color) error {
 	s.transformsMutex.Lock()
 	defer s.transformsMutex.Unlock()
 
-	s.transforms[id.String()] = &transform
+	s.transforms[uuidBytes.String()] = &transform
 	s.emitChange(worldstatestore.TransformChange{
 		ChangeType: v1.TransformChangeType_TRANSFORM_CHANGE_TYPE_ADDED,
 		Transform:  &transform,
 	})
-	s.logger.Infow("Successfully added transform to world state store:", id)
+	s.logger.Infow("Successfully added transform to world state store:", uuidBytes.String())
 
 	return nil
 }

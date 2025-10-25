@@ -26,8 +26,8 @@ func init() {
 }
 
 type Config struct {
-	ServiceName string      `json:"service_name"`
-	Arrows      []lib.Arrow `json:"arrows"`
+	ServiceName string          `json:"service_name"`
+	Arrows      []lib.ArrowJSON `json:"arrows"`
 }
 
 func (config *Config) Validate(path string) ([]string, []string, error) {
@@ -43,7 +43,7 @@ func (config *Config) Validate(path string) ([]string, []string, error) {
 		return nil, nil, resource.NewConfigValidationError(path, errors.New("arrows must be a non-empty array"))
 	}
 
-	return nil, nil, nil
+	return []string{config.ServiceName}, nil, nil
 }
 
 type drawArrowsButton struct {

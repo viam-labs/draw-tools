@@ -32,7 +32,7 @@ func (config *Config) Validate(path string) ([]string, []string, error) {
 		return nil, nil, resource.NewConfigValidationFieldRequiredError(path, "service_name")
 	}
 
-	return nil, nil, nil
+	return []string{config.ServiceName}, nil, nil
 }
 
 type clearArrowsButton struct {
