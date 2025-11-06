@@ -1,8 +1,14 @@
 # Changelog
 
-Current Version: 0.4.0
+Current Version: 0.5.0
 
 ---
+
+## 0.4.0 → 0.5.0
+
+*Released by Devin C. (devin@viam.com) on 2025-11-06 13:53:53 EST*
+
+- **[minor]** Increase draw-arrow-world-state change buffer size, add backpressure, fix meta.json *(by Devin C. at 2025-11-06 13:46:34 EST)*
 
 ## 0.3.0 → 0.4.0
 

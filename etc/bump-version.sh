@@ -86,6 +86,11 @@ if ! git diff-index --quiet HEAD --; then
     exit 1
 fi
 
+# Generate documentation
+echo "Generating documentation..."
+make docs
+echo ""
+
 # Read current version
 CURRENT_VERSION=$(jq -r '.current' .version)
 echo -e "Current version: ${BLUE}$CURRENT_VERSION${NC}"
