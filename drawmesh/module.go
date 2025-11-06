@@ -84,7 +84,7 @@ func NewWorldStateService(
 		cancelCtx:    cancelCtx,
 		cancelFunc:   cancelFunc,
 		transforms:   make(map[string]*commonPB.Transform),
-		changeStream: make(chan worldstatestore.TransformChange, 100),
+		changeStream: make(chan worldstatestore.TransformChange, 100000),
 	}
 
 	return service, nil
@@ -266,8 +266,9 @@ func (service *worldStateService) emitChange(change worldstatestore.TransformCha
 	select {
 	case service.changeStream <- change:
 		// Successfully sent
-	default:
-		service.logger.Warnw("Change stream buffer full, dropping change")
+	case <-service.cancelCtx.Done():
+		// Service is closing, don't block
+		service.logger.Debugw("Service closing, dropping change event")
 	}
 }
 

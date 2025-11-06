@@ -7,7 +7,7 @@
   "models": [
     {
       "api": "rdk:service:world_state_store",
-      "model": "viam-viz:draw-tools:draw-arrows",
+      "model": "viam-viz:draw-tools:draw-arrows-world-state",
       "short_description": "Allows drawing poses as arrows.",
       "markdown_link": "README.md#model-viam-vizdraw-toolsdraw-arrows"
     },
