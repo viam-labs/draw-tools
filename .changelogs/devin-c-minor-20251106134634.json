@@ -1,0 +1,6 @@
+{
+  "type": "minor",
+  "message": "Increase draw-arrow-world-state change buffer size, add backpressure, fix meta.json",
+  "by": "Devin C.",
+  "at": "2025-11-06 13:46:34 EST"
+}
