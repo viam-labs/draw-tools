@@ -44,6 +44,6 @@ docs:
 	@bash etc/generate-docs.sh
 
 .PHONY: bump-version
-bump-version: docs
+bump-version: 
 	@bash etc/bump-version.sh
  
